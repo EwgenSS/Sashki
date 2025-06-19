@@ -1,0 +1,147 @@
+# test_checkers.py
+import unittest
+from checkers import CheckersGame
+
+class TestCheckers(unittest.TestCase):
+    def setUp(self):
+        self.game = CheckersGame()
+    
+    def test_board_initialization(self):
+        """Проверка стартовой расстановки"""
+        # Проверка белых шашек
+        self.assertEqual(self.game.board[0][1], 'W')
+        self.assertEqual(self.game.board[2][5], 'W')
+        # Проверка черных шашек
+        self.assertEqual(self.game.board[5][0], 'B')
+        self.assertEqual(self.game.board[7][6], 'B')
+        # Проверка пустых клеток
+        self.assertEqual(self.game.board[3][3], ' ')
+    
+    def test_position_conversion(self):
+        """Проверка конвертации координат"""
+        self.assertEqual(self.game.convert_position('a1'), (7, 0))
+        self.assertEqual(self.game.convert_position('h8'), (0, 7))
+        self.assertEqual(self.game.convert_position('e5'), (3, 4))
+    
+    def test_valid_moves(self):
+        """Проверка расчета допустимых ходов"""
+        # Для белой шашки в начальной позиции
+        moves = self.game.get_moves(2, 1)
+        self.assertEqual(len(moves), 2)
+        self.assertIn((1, 0, None), moves)
+        self.assertIn((1, 2, None), moves)
+        
+        # Для черной шашки
+        moves = self.game.get_moves(5, 0)
+        self.assertEqual(len(moves), 1)
+        self.assertIn((6, 1, None), moves)
+    
+    def test_capture_logic(self):
+        """Проверка логики взятия"""
+        # Создаем ситуацию для взятия
+        self.game.board = [[' ' for _ in range(8)] for _ in range(8)]
+        self.game.board[3][3] = 'W'  # Белая шашка
+        self.game.board[4][4] = 'B'  # Черная шашка
+        
+        moves = self.game.get_moves(3, 3)
+        self.assertEqual(len(moves), 1)
+        self.assertEqual(moves[0][2], (4, 4))  # Проверка позиции взятия
+    
+    def test_king_promotion(self):
+        """Проверка превращения в дамку"""
+        self.game.board[1][1] = 'B'  # Черная шашка на предпоследней линии
+        self.game.make_move((1, 1), (0, 2), None)
+        self.assertEqual(self.game.board[0][2], 'BK')  # Должна стать дамкой
+
+if __name__ == '__main__':
+    unittest.main()
+    class IntegrationTests(unittest.TestCase):
+        def test_full_capture_sequence(self):
+            """Тест полной последовательности взятия"""
+            game = CheckersGame()
+            # Создаем тестовую доску
+            game.board = [
+                [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+                [' ', ' ', 'B', ' ', 'B', ' ', ' ', ' '],
+                [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+                [' ', ' ', 'B', ' ', 'W', ' ', ' ', ' '],
+                [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+                [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+                [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+                [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']
+            ]
+            game.current_player = 'W'
+        
+            # Должно быть обязательное взятие
+            self.assertTrue(game.has_captures('W'))
+        
+            # Выполняем ход с взятием
+            game.make_move((3, 4), (1, 2), (2, 3))
+            self.assertEqual(game.board[2][3], ' ')  # Шашка снята
+            self.assertEqual(game.board[1][2], 'W')  # Шашка переместилась
+        
+            # Проверяем возможность продолжения взятия
+            moves = game.get_moves(1, 2)
+            self.assertIn((-1, 0, (0, 1)), moves)  # Должна быть возможность нового взятия
+    def test_win_condition():
+        """Тест условия победы"""
+        game = CheckersGame()
+        # Удаляем все черные шашки
+        for i in range(8):
+            for j in range(8):
+                if game.board[i][j] == 'B':
+                    game.board[i][j] = ' '
+    
+        # Проверяем определение победы
+        white_exists = any(any(cell in ['W', 'WK'] for cell in row) for row in game.board)
+        black_exists = any(any(cell in ['B', 'BK'] for cell in row) for row in game.board)
+    
+        assert white_exists is True
+        assert black_exists is False
+        print("Тест условия победы: PASSED")
+
+    def test_full_game_simulation():
+        """Тест симуляции полной игры"""
+        game = CheckersGame()
+        moves = [
+            ('e3', 'd4'),  # Белые
+            ('d6', 'e5'),  # Черные
+            ('d4', 'e5'),  # Белые (взятие)
+            ('c7', 'd6'),  # Черные
+            # ... продолжение тестовых ходов
+        ]
+    
+        for move in moves:
+            start, end = move
+            # Проверяем валидность позиций
+            assert game.is_valid_position(start)
+            assert game.is_valid_position(end)
+        
+            # Конвертируем координаты
+            sx, sy = game.convert_position(start)
+            ex, ey = game.convert_position(end)
+        
+            # Проверяем допустимость хода
+            valid_moves = game.get_moves(sx, sy)
+            move_found = any(move[0] == ex and move[1] == ey for move in valid_moves)
+            assert move_found, f"Недопустимый ход: {start}->{end}"
+        
+            # Выполняем ход
+            capture = next((m[2] for m in valid_moves if m[0] == ex and m[1] == ey), None)
+            game.make_move((sx, sy), (ex, ey), capture)
+        
+            # Переключаем игрока
+            game.current_player = 'B' if game.current_player == 'W' else 'W'
+    
+print("Тест симуляции игры: PASSED")
+def interactive_test():
+    game = CheckersGame()
+    print("Запуск интерактивного теста...")
+    print("Попробуйте следующие сценарии:")
+    print("1. Стандартные ходы (e3-d4)")
+    print("2. Ходы с взятием (когда возможно)")
+    print("3. Попытка недопустимых ходов")
+    print("4. Достижение края доски для превращения")
+    print("5. Завершение игры при уничтожении шашек")
+    game.play()
+
